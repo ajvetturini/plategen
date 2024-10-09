@@ -1,3 +1,8 @@
 This is is a simple python script that can generate a SBS-compliant STL file for use with the microfluid robot. You can quickly generate the required STL (which you can then 3D print) by specifying the custom the geometry of the tubes (i.e., an NxM grid of holes with diameter D). The other geometry that maintains the SBS-compliance is the automated around these inputs.
 
-Developed by researchers from the Microsystems and MechanoBiology Laboratory. For questions, reach out to AJ Vetturini. 
+Requirements
+____________
+- Python 3 (any version)
+- OpenSCAD (https://openscad.org/downloads.html)
+
+Developed by researchers from the Microsystems and MechanoBiology Laboratory. For questions, reach out to AJ Vetturini (avetturi@andrew.cmu.edu). 
