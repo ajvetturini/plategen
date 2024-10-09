@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# OpenSCAD
+*.scad
+
 # Distribution / packaging
 .Python
 build/
