@@ -1,6 +1,19 @@
 import os
 import subprocess
 
+def get_end_clearance(dl):
+    """
+    Calculates the amount of spacing prior to the first hole cutout
+
+    :param dl: Difference in length between sbs_holder and the calculated sample holder
+    """
+    if dl > 10:
+        # If the dl is larger than 5, just add a simple 5mm "buffer" on each end:
+        return 5
+
+    # Otherwise we just return the distance / 2:
+    return dl / 2
+
 def generate_sbs_plate(
         output_scad="sbs_plate.scad", 
         output_stl="sbs_plate.stl", 
@@ -8,8 +21,8 @@ def generate_sbs_plate(
         n_rows=8, 
         n_cols=12, 
         sample_spacing=9.0,
-        end_spacing=5, 
-        tube_diameter=4.5
+        tube_diameter=4.5,
+        create_stl=True,
     ):
     """
     Generates a simple rectangular extrusion with SBS-compliant dimensions.
@@ -20,8 +33,8 @@ def generate_sbs_plate(
     :param n_rows: Number of rows to add cuts for
     :param n_cols: Number of columns to add cuts for (e.g., 8 rows 12 cols is 96 well plate)
     :param sample_spacing: Center-to-center distance between sample cuts
-    :param end_spacing: TODO REMOVE THIS, IT SHOULD BE MANUALLY CALCULATED / OPTIMIZED (MAXIMIZED)
     :param tube_diameter: Diameter of the cut cylinders (mm)
+    :param create_stl: Boolean to automatically create the STL (typically true)
     """
     # SBS standard plate dimensions (mm)
     sbs_base_length = 127.76  # mm
@@ -30,6 +43,13 @@ def generate_sbs_plate(
     hole_gap_tolerance = 0.5
     holder_height = plate_height - base_height
     assert holder_height > 0, 'ERROR: Invalid holder height calculated, minimum height is >5.'
+
+    # Correct names:
+    if not output_stl.endswith('.stl'):
+        assert Exception('Invalid stl filename, needs to end with .stl')
+    
+    if not output_scad.endswith('.scad'):
+        assert Exception('Invalid openscad filename, needs to end with .scad')
 
     # Parametrically derive the sample holder dimensions:
     holder_length = n_cols * sample_spacing
@@ -75,13 +95,22 @@ def generate_sbs_plate(
 
             // Cutouts:
             """
+    # Calculate the optimal spacing from the ends of the holder:
+    max_length_spacing = sbs_base_length - holder_length
+    max_width_spacing = sbs_base_width - holder_width
+
+    length_spacing = get_end_clearance(max_length_spacing)
+    width_spacing = get_end_clearance(max_width_spacing)
+
+    print(length_spacing)
+    print(width_spacing)
 
     # Add the cylinders for the holes based on hole_centers
     for center in hole_centers:
         tx, ty = (sbs_base_length/2 - holder_length/2), (sbs_base_width/2 - holder_width/2)
         # Calculate new centers:
-        dx = end_spacing + center[0] + tx
-        dy = end_spacing + center[1] + ty
+        dx = length_spacing + center[0] + tx
+        dy = width_spacing + center[1] + ty
         scad_code += f"""
             translate([{dx}, {dy}, {base_height}]) {{
                 cylinder(h={holder_height + hole_gap_tolerance}, d={tube_diameter}, center=false, $fn=10);
@@ -110,13 +139,15 @@ def generate_sbs_plate(
     ]
 
     # Run the command
-    try:
-        subprocess.run(command, check=True)
-        print(f"STL file generated: {output_stl}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error during OpenSCAD execution: {e}")
+    if create_stl:
+        try:
+            subprocess.run(command, check=True)
+            print(f"STL file generated: {output_stl}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error during OpenSCAD execution: {e}")
 
 
 # Example usage
-# generate_sbs_plate_and_stl(n_tubes=96, tube_diameter=6.4, spacing=9.0)
-generate_sbs_plate()
+generate_sbs_plate(output_scad='96_well_plate.scad', output_stl='96_well_plate.stl', create_stl=False)
+generate_sbs_plate(output_scad='annealer_065ml_tubes.scad', output_stl='annealer_065ml_tubes.stl',
+                   n_rows=3, n_cols=5, tube_diameter=3, create_stl=False)
